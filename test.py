@@ -2,8 +2,6 @@ import os
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import unicodedata
-import re
 import cloudinary
 import cloudinary.uploader
 from urllib.parse import urlparse, urljoin
@@ -21,7 +19,7 @@ cloudinary.config(
 )
 
 # Đường dẫn đến file Excel
-input_file = "test.xlsx"
+input_file = "product.xlsx"
 
 # Kiểm tra file Excel tồn tại
 if not os.path.exists(input_file):
@@ -68,15 +66,49 @@ def download_temp_image(url):
         print(f"Failed to download {url}: {e}")
     return None
 
+# Nhập số thứ tự hàng bắt đầu
+try:
+    start_index = int(input("Nhập số thứ tự hàng bắt đầu (tính từ 0): "))
+    if start_index < 0 or start_index >= len(data):
+        raise ValueError("Số thứ tự không hợp lệ.")
+except ValueError as ve:
+    print(f"Lỗi: {ve}")
+    exit()
+
+# Kiểm tra số lượng sản phẩm còn lại
+remaining_products = len(data) - start_index
+if remaining_products <= 0:
+    print(f"Không có sản phẩm nào để xử lý từ hàng {start_index}. Vui lòng nhập số thứ tự hợp lệ.")
+    exit()
+
+# Nhập giới hạn số lượng sản phẩm xử lý
+try:
+    limit = int(input(f"Nhập số lượng sản phẩm cần xử lý (tối đa {remaining_products}): "))
+    if limit <= 0 or limit > remaining_products:
+        raise ValueError(f"Giới hạn không hợp lệ. Bạn chỉ có thể xử lý tối đa {remaining_products} sản phẩm.")
+except ValueError as ve:
+    print(f"Lỗi: {ve}")
+    exit()
+
+# Tính toán lại số lượng sản phẩm thực tế sẽ được xử lý
+end_index = start_index + limit
+print(f"\nĐang xử lý từ hàng {start_index} đến {end_index - 1} (tổng cộng {limit} sản phẩm).")
+
 # Danh sách lưu trữ log sản phẩm và hình ảnh đã tải lên
 log_entries = []
 
-# Duyệt qua từng sản phẩm
-for index, row in data.iterrows():
+# Duyệt qua từng sản phẩm trong phạm vi được chỉ định
+for index in range(start_index, end_index):
+    row = data.iloc[index]
     product_name = row['Tên hàng']
     search_url = row['URL tìm kiếm hình ảnh']
 
-    print(f"\nĐang xử lý sản phẩm: {product_name}")
+    # Kiểm tra nếu cột "Hình ảnh" đã có dữ liệu, thì bỏ qua
+    if pd.notna(row['Hình ảnh']) and row['Hình ảnh'].strip() != "":
+        print(f"Đã có hình ảnh cho sản phẩm: {product_name}. Bỏ qua.")
+        continue  # Bỏ qua sản phẩm này nếu đã có hình ảnh
+
+    print(f"\nĐang xử lý sản phẩm: {product_name} (Hàng {index})")
     print(f"URL tìm kiếm: {search_url}")
 
     try:
