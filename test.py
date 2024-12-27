@@ -54,7 +54,7 @@ for index, row in data.iterrows():
         # Lấy tất cả các ảnh trong thư mục sản phẩm
         image_paths = []
         for filename in os.listdir(product_folder):
-            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif','.webp')):
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
                 image_paths.append(os.path.join(product_folder, filename))
 
         # In ra các ảnh tìm thấy trong thư mục
