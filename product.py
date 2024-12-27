@@ -6,7 +6,7 @@ import unicodedata
 import re
 
 # Đường dẫn đến file Excel (cùng thư mục với file Python)
-input_file = "test.xlsx"
+input_file = "shoppe.xlsx"
 
 # Đọc file Excel
 data = pd.read_excel(input_file)
@@ -32,6 +32,24 @@ def download_image(url, folder, filename):
     except Exception as e:
         print(f"Failed to download {url}: {e}")
 
+# Hàm lấy các sản phẩm từ URL tìm kiếm
+def get_product_links(search_url):
+    try:
+        response = requests.get(search_url, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Tìm tất cả các link sản phẩm trong kết quả tìm kiếm
+        product_links = []
+        product_tags = soup.find_all('a', {'class': 'link'}, href=True)  # Lọc các link sản phẩm
+        
+        for tag in product_tags:
+            product_links.append(f"https://shopee.vn{tag['href']}")  # Xây dựng URL đầy đủ
+        
+        return product_links
+    except Exception as e:
+        print(f"Error getting product links from {search_url}: {e}")
+        return []
+
 # Duyệt qua từng sản phẩm
 for index, row in data.iterrows():
     product_name = row['Tên hàng']
@@ -44,21 +62,25 @@ for index, row in data.iterrows():
     product_folder = f"downloaded_images/{clean_product_name}"
     os.makedirs(product_folder, exist_ok=True)
 
-    try:
-        # Gửi yêu cầu đến URL tìm kiếm hình ảnh
-        response = requests.get(search_url, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
+    # Lấy danh sách các sản phẩm từ URL tìm kiếm
+    product_links = get_product_links(search_url)
 
-        # Tìm các thẻ hình ảnh
-        image_tags = soup.find_all('img', limit=4)
-        image_urls = [img['src'] for img in image_tags if 'src' in img.attrs]
+    for product_url in product_links:
+        try:
+            # Truy cập vào trang chi tiết sản phẩm
+            response = requests.get(product_url, timeout=10)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Tìm các thẻ hình ảnh trong trang sản phẩm
+            image_tags = soup.find_all('img', limit=4)
+            image_urls = [img['src'] for img in image_tags if 'src' in img.attrs]
+            
+            # Tải tối đa 3 ảnh vào thư mục riêng của sản phẩm
+            for i, img_url in enumerate(image_urls):
+                filename = f"{clean_product_name}_{i + 1}.jpg"
+                download_image(img_url, product_folder, filename)
 
-        # Tải tối đa 3 ảnh vào thư mục riêng của sản phẩm
-        for i, img_url in enumerate(image_urls):
-            filename = f"{clean_product_name}_{i + 1}.jpg"
-            download_image(img_url, product_folder, filename)
-
-    except Exception as e:
-        print(f"Error processing {product_name}: {e}")
+        except Exception as e:
+            print(f"Error processing {product_url}: {e}")
 
 print("Hoàn tất tải ảnh!")

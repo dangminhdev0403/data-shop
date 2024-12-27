@@ -8,6 +8,7 @@ from urllib.parse import urlparse, urljoin
 import sys
 
 # Đặt encoding mặc định cho sys.stdout là utf-8
+
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Cấu hình Cloudinary
@@ -68,7 +69,7 @@ def download_temp_image(url):
 
 # Nhập số thứ tự hàng bắt đầu
 try:
-    start_index = int(input("Nhập số thứ tự hàng bắt đầu (tính từ 0): "))
+    start_index = int(input("Nhập số thứ tự hàng bắt đầu : "))-2
     if start_index < 0 or start_index >= len(data):
         raise ValueError("Số thứ tự không hợp lệ.")
 except ValueError as ve:
